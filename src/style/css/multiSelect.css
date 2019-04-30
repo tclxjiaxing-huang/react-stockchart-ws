@@ -1,0 +1,38 @@
+.multi-select{
+    min-width: 50px;
+    max-width: 250px;
+    min-height: 30px;
+    display: flex;
+    position: relative;
+}
+.multi-select-box{
+    display: flex;
+    background: #1d2731;
+    padding: 5px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+.multi-input{
+    flex: 1;
+    width: 100%;
+    flex: 1;
+    display: flex;
+    border: solid 1px #ddd;
+    border-radius: 3px;
+    padding: 5px;
+    background: none;
+    border: none;
+    width: 80px;
+    color: #fff;
+}
+.multi-select-item{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    background: #375061;
+    border-radius: 3px;
+    font-size: 12px;
+    padding: 3px;
+    margin: 2px;
+}

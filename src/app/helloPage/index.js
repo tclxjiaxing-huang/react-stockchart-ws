@@ -1,7 +1,5 @@
 import React from 'react';
 import logo from '../../style/svg/logo.svg'
-import Todo from '../../commponents/todo/index'
-import Clock from '../../commponents/clock/index'
 
 function hello() {
   return (
@@ -11,8 +9,6 @@ function hello() {
         <p>
           Edit <code>src/App.js</code> and save to reload.
         </p>
-        <Todo />
-        <Clock />
         <a
           className="App-link"
           href="https://reactjs.org"

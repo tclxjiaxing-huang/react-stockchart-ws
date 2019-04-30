@@ -1,0 +1,31 @@
+.select{
+    display: flex;
+    position: relative;
+}
+#select-box{    
+    background: #30404d;
+    color: #f5f8fa;
+    position: absolute;
+    z-index: 20;
+    padding: 10px;
+    border-radius: 5px;
+    top: 30px;
+    left: 0;
+}
+.menu-item{
+    min-width: 150px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    height: 30px;
+    padding: 5px;
+    box-sizing: border-box;
+    cursor: pointer;
+    border-radius: 3px;
+}
+.menu-item:hover{
+    background-color: rgba(138, 155, 168, 0.15);
+}
+.menu-item-active{
+    background: #137cbd!important;
+}

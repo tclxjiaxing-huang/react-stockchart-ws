@@ -1,6 +1,7 @@
 
 import { tsvParse, csvParse } from  "d3-dsv";
 import { timeParse } from "d3-time-format";
+import { Socket } from "net";
 
 function parseData(parse) {
 	return function(d) {
@@ -23,14 +24,14 @@ function postFetch(url,data){
     }).then(response=>response.json())
 }
 export function getData() {
-	const promiseMSFT = fetch("https://cdn.rawgit.com/rrag/react-stockcharts/master/docs/data/MSFT.tsv")
+	const promiseMSFT = fetch("https://cdn.jsdelivr.net/gh/rrag/react-stockcharts@master/docs/data/MSFT.tsv")
 		.then(response => response.text())
 		.then(data => tsvParse(data, parseData(parseDate)))
 	return promiseMSFT;
 }
 
-export function getOurData() {
-	const promiseMSFT = postFetch("https://hkquote.vs.com:8088/QryHistoryQuote",{contractCode:'FO_CL_1906',count:100,period:'KLINE_UNKNOWN'})
+export function getOurData(params) {
+	const promiseMSFT = postFetch("https://hkquote.vs.com:8088/QryHistoryQuote",params);
 	return promiseMSFT;
 }
 
@@ -40,4 +41,8 @@ export function handleOurData(data) {
     }
     var newData = [];
     return newData;
+}
+
+export function getTime(date){
+	return new Date(date).getTime();
 }
