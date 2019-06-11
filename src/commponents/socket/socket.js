@@ -7,6 +7,11 @@ class Socket extends React.Component{
             socket:null
         }
     }
+    componentWillMount(){
+        if(this.props.isConnectWS&&this.state.socket==null){
+            this.openConnection();
+        }
+    }
     componentDidUpdate(){
         if(this.props.isConnectWS&&this.state.socket==null){
             this.openConnection();
@@ -15,7 +20,6 @@ class Socket extends React.Component{
     openConnection = ()=>{
         const {
             url,
-            wsObj,
         } = this.props;
         let socket = new WebSocket(url);
         socket.onopen = (data)=>{
@@ -48,11 +52,12 @@ class Socket extends React.Component{
         socket.send(JSON.stringify(loginParam));
     }
     onMessage = (data)=>{
-        if(data.error_code==0||data.method=="on_rtn_quote"){
+        if(data.error_code===0||data.method==="on_rtn_quote"){
             switch(data.method){
                 case 'on_rsp_login':this.login(data.data);break;
                 case 'on_rsp_subscribe':this.subscribe(data.data);break;
                 case 'on_rtn_quote':this.quote(data.data);break;
+                default:break;
             }
         }else{
 
@@ -80,7 +85,6 @@ class Socket extends React.Component{
     }
     //订阅成功
     subscribe = (data)=>{
-        console.log(data);
     }
     //推送的行情数据
     quote = (data)=>{
@@ -91,9 +95,6 @@ class Socket extends React.Component{
     }
     render(){
         const {
-            isConnectWS,
-            url,
-            wsObj,
             children
         } = this.props;
         return children

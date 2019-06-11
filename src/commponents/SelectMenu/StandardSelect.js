@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 import { Select,Button } from '../common';
-
+/* eslint-disable */
 class StandardSelect extends Component {
 
   render() {

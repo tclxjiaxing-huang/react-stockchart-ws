@@ -48,12 +48,32 @@ export const ema20 = ema()
   .accessor(d => d.ema20) // Required, if not provided, log an error during calculation
   .stroke('blue'); // Optional
 
+export const sma5 = sma()
+  .options({ windowSize: 5 })
+  .merge((d, c) => {
+    d.sma5 = c;
+  })
+  .accessor(d => d.sma5)
+  .stroke('#8f5bbc')
+  .fill('#8f5bbc');
+
+export const sma10 = sma()
+  .options({ windowSize: 10 })
+  .merge((d, c) => {
+    d.sma10 = c;
+  })
+  .accessor(d => d.sma10)
+  .stroke('#8bb4e1')
+  .fill('#8bb4e1');
+
 export const sma20 = sma()
   .options({ windowSize: 20 })
   .merge((d, c) => {
-    d.ema20 = c;
+    d.sma20 = c;
   })
-  .accessor(d => d.ema20);
+  .accessor(d => d.sma20)
+  .stroke('#8d2271')
+  .fill('#8d2271');
 
 export const tma20 = tma()
   .options({ windowSize: 20 })

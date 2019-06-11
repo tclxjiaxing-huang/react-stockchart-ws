@@ -7,7 +7,7 @@ class ChartComponent extends React.Component {
 	}
     render(){
         return(
-            <OHLCV></OHLCV>
+            <OHLCV contractNo='FO_CL_1906' period='KLINE_UNKNOWN'></OHLCV>
         )
     }
 }

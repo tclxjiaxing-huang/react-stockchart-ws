@@ -1,5 +1,5 @@
 import React from 'react'
-
+/* eslint-disable */
 class MenuItem extends React.Component{
     handleClick = (value)=>{
         this.props.closeSelect();

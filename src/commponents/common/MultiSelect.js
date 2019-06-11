@@ -1,7 +1,7 @@
 import React from 'react'
 import MenuItme from './MenuItem'
 import MultiSelectItem from './MultiSelectItem'
-
+/* eslint-disable */
 class MultiSelect extends React.Component{
     state = {
         isShow:false

@@ -1,11 +1,13 @@
+/* eslint-disable */
 import React from 'react'
 import { AutoSizer } from 'react-virtualized'
-import { getData,getOurData,getTime } from "./utils"
+import { getOurData,getTime,handleTime,handleOriginTime,getUrlParams } from "./utils"
 import styled from 'styled-components';
 
 import ChartLoadingScreen from './chartLoadingScreen';
 import { StandardSelect,IndicatorSelect } from '../SelectMenu';
 import { Socket } from '../socket';
+
 import {
   Hideable
 } from '../common/index'
@@ -31,12 +33,12 @@ const chartTypes= [
   ].map((p, index) => ({ ...p, rank: index }));
   
 const indicators = [
-    { name: 'Volume', active: false, height: 0 },
+    { name: 'Volume', active: true, height: 1 },
     { name: 'Trendline', active: true, height: 0 },
-    { name: 'MACD', active: false, height: 160 },
-    { name: 'RSI', active: false, height: 150 },
-    { name: 'ATR', active: false, height: 150 },
-    { name: 'ForceIndex', active: false, height: 150 },
+    { name: 'MACD', active: false, height: 1 },
+    { name: 'RSI', active: false, height: 1 },
+    { name: 'ATR', active: false, height: 1 },
+    { name: 'ForceIndex', active: false, height: 1 },
   ].map((p, index) => ({ ...p, rank: index }));
 
 class OHLCV extends React.PureComponent{
@@ -46,9 +48,12 @@ class OHLCV extends React.PureComponent{
         this.handleChartData = this.handleChartData.bind(this);
         // this.changeTimeSpan = this.changeTimeSpan.bind(this);
     }
+    componentDidMount(){
+
+    }
     state = {
-        toolHight:65,
-        indicatorHeight: 0, //指标高度
+        toolHight:0, //工具栏高度
+        indicatorHeight: 1, //指标高度
         currentChart: chartTypes[0], //当前选择的图表
         chartTypes: chartTypes, //所有图表数组
         indicators: indicators, //所有指标数据
@@ -57,21 +62,33 @@ class OHLCV extends React.PureComponent{
         expandedChard: true, 
         isOpen: true,
         ohlcvData:null, //图表数据
-        noOfCandles:50, //最开始显示条数
-        contractNo:'FI_IH_1905',//合约编号
+        contractNo:'FO_NQ_1906',//合约编号
         period:'KLINE_UNKNOWN',//周期
-        count:100,//条数
+        count:500,//条数
         WSUrl:'wss://quote.vs.com:8889/',//ws地址
         socket:null, //ws实例
         wsObj:{
-            account:'12',
-            password:'12',
+            account:'chenlin',
+            password:'a123456',
             version:'2.0'
         },
         isConnectWS:false,
         offsetTime:60000,
         lastData:{},
         LastVolume:'',
+        start:0,
+        end:0,
+        dotSize:3,
+        urlParams:{
+            chartType:'',
+            period:'KLINE_UNKNOWN',
+            contractNo:'FO_NQ_1906',
+            contractName:'国际原油',
+            apiUrl:'https://hkquote.vs.com:8088/QryHistoryQuote',
+            WSUrl:'wss://hkquote.vs.com:8889',
+            priceType:1,//1最新价 2买价 3卖价
+            dotSize:3,
+        }
     }
     //获取当前选择的图表数据
     getCurrentChartData = ()=>{
@@ -80,7 +97,7 @@ class OHLCV extends React.PureComponent{
             count:this.state.count,
             period:this.state.period
         }
-		getOurData(params).then(data => {
+		getOurData(this.state.urlParams.apiUrl,params).then(data => {
             if(!data.data.lines){
                 this.setState({ ohlcvData:[] })
             }else{
@@ -90,22 +107,52 @@ class OHLCV extends React.PureComponent{
     }
     //处理图表数据
     handleChartData = (data)=>{
+        const {
+            urlParams,
+            period
+        }=this.state;
         var newData = data.map((value,index)=>{
             return {
-                close:value[2],
+                close:value[1],
                 date:new Date(value[0]),
                 high:value[4],
                 low:value[3],
-                open:value[1],
+                open:value[2],
                 volume:value[5],
             }
         })
-        this.setState({lastData:newData[newData.length-1]});
-        this.setState({ ohlcvData:newData,isConnectWS:true });
+        if(urlParams.chartType === 'LIGHT'){
+            this.setState({ 
+                ohlcvData:newData.length>=2?[newData[newData.length-2],newData[newData.length-1]]:newData.length===1?[newData[newData.length-1]]:[],
+                isConnectWS:true,
+                start:1,
+                end:0,
+                lastData:newData.length>=1?newData[newData.length-1]:[]
+            });
+        }else{
+            if(period == 'KLINE_UNKNOWN'){
+                this.setState({ 
+                    ohlcvData:newData,
+                    isConnectWS:true,
+                    lastData:newData.length>=1?newData[newData.length-1]:[],
+                    start:newData.length-1,
+                    end:newData.length>500?newData.length-500:0,
+                });
+            }else{
+                this.setState({ 
+                    ohlcvData:newData,
+                    isConnectWS:true,
+                    lastData:newData.length>=1?newData[newData.length-1]:[],
+                    start:newData.length-1,
+                    end:newData.length>100?newData.length-100:0,
+                });
+            }
+        }
+
     }
     //切换周期
     changeTimeSpan = (e)=>{
-        if(this.state.currentTimeSpan == e){
+        if(this.state.currentTimeSpan === e){
             return;
         }
         this.setState({currentTimeSpan:e});
@@ -125,7 +172,7 @@ class OHLCV extends React.PureComponent{
     }
     //切换图表类型
     changeChartType = (e)=>{
-        if(this.state.currentChart == e){
+        if(this.state.currentChart === e){
             return;
         }
         this.setState({currentChart:e});
@@ -138,7 +185,6 @@ class OHLCV extends React.PureComponent{
         active
           ? (newIndicatorHeight = indicatorHeight + indicators[indicator.rank].height)
           : (newIndicatorHeight = indicatorHeight - indicators[indicator.rank].height);
-            console.log(newIndicatorHeight);
         this.setState({
             indicators:[
                 ...indicators.slice(0,indicator.rank),
@@ -148,19 +194,55 @@ class OHLCV extends React.PureComponent{
             indicatorHeight: newIndicatorHeight,
         })
     }
+    swicthIndicator = (indicator)=>{
+        if(indicator.name == 'Volume'){
+            this.setState({
+                indicators:[
+                    { name: 'Volume', active: true, height: 1 },
+                    { name: 'Trendline', active: true, height: 0 },
+                    { name: 'MACD', active: false, height: 1 },
+                    { name: 'RSI', active: false, height: 1 },
+                    { name: 'ATR', active: false, height: 1 },
+                    { name: 'ForceIndex', active: false, height: 1 },
+                ],
+            })
+        }else if(indicator.name == 'MACD'){
+            this.setState({
+                indicators:[
+                    { name: 'Volume', active: false, height: 1 },
+                    { name: 'Trendline', active: true, height: 0 },
+                    { name: 'MACD', active: true, height: 1 },
+                    { name: 'RSI', active: false, height: 1 },
+                    { name: 'ATR', active: false, height: 1 },
+                    { name: 'ForceIndex', active: false, height: 1 },
+                ],
+            })
+        }
+    }
     handleWSData = (data)=>{
-        if(this.state.ohlcvData==null||this.state.ohlcvData.length==0){
+        if(this.state.ohlcvData==null){
             return;
         }
         const {
             lastData,
             offsetTime,
-            LastVolume
+            LastVolume,
+            ohlcvData,
+            urlParams
         } = this.state;
-        if(LastVolume == ''){
+        if(LastVolume === ''){
             this.setState({LastVolume:data[6]})
         }
-        if(getTime(data[1])-getTime(lastData.date)>=offsetTime){
+        var preTime = '';
+        var nowTime = '';
+        if(urlParams.chartType!=='LIGHT'){
+            preTime = handleOriginTime(lastData.date,'yyyy-mm-dd hh:mm');
+            nowTime = handleOriginTime(data[1],'yyyy-mm-dd hh:mm');
+        }else{
+            preTime = lastData.date?lastData.date:new Date();
+            nowTime = data[1];
+        }
+        if(getTime(nowTime)-getTime(preTime)>=offsetTime||ohlcvData.length===0){
             var newData = {
                 close:data[3],
                 date:new Date(data[1]),
@@ -171,54 +253,107 @@ class OHLCV extends React.PureComponent{
             }
             //下一个点
             this.setState(function(prevState,props){
-                prevState.ohlcvData.push(newData);
+                prevState.ohlcvData.push(newData)
                 return{
-                    ohlcvData:prevState.ohlcvData.slice(0)
+                    ohlcvData:prevState.ohlcvData,
+                    lastData:newData,
+                    LastVolume:data[6],
                 }
             })
+            if(urlParams.chartType==='LIGHT'){
+                this.setState(function(prevState,props){
+                    return{
+                        start:prevState.ohlcvData.length-1,
+                        end:0,
+                    }
+                })
+                if(ohlcvData.length>50){
+                    this.setState(function(prevState,props){
+                        return{
+                            ohlcvData:prevState.ohlcvData.slice(-50),
+                        }
+                    })
+                }
+            }
         }else{
             //当前点
-            if(lastData.high<data[3]){
+            var _lastData = lastData;
+            if(_lastData.high<data[3]){
                 //比较高
-                lastData.high = data[3]
+                _lastData.high = data[3]
             }
-            if(lastData.low>data[3]){
+            if(_lastData.low>data[3]){
                 //比较低
-                lastData.low = data[3]
+                _lastData.low = data[3]
             }
-            lastData.close = data[3];
-            lastData.volume+=(data[6]-LastVolume);
-            console.log(lastData.volume);
+            _lastData.close = data[3];
+            _lastData.volume+=(data[6]-this.state.LastVolume);
             this.setState(function(prevState,props){
-                prevState.ohlcvData.splice(prevState.ohlcvData.length-1,1,lastData);
+                prevState.ohlcvData.splice(prevState.ohlcvData.length-1,1,_lastData);
                 return{
-                    ohlcvData:prevState.ohlcvData.slice(0)
+                    ohlcvData:prevState.ohlcvData.slice(0),
+                    lastData:_lastData,
+                    LastVolume:data[6],
                 }
             })
         }
-        this.setState(function(prevState,props){
-            return{
-                lastData:prevState.ohlcvData[prevState.ohlcvData.length-1],
-                LastVolume:data[6]
-            }
-        });
     }
     componentWillMount(){
+        if(getUrlParams()){
+            var _urlParams = getUrlParams();
+            this.state.urlParams = _urlParams;
+            this.state.period = _urlParams.period;
+            this.state.contractNo = _urlParams.contractNo;
+            this.state.WSUrl = _urlParams.WSUrl;
+            this.state.chartType = _urlParams.chartType;
+            this.state.dotSize = _urlParams.dotSize
+        }
         const {
-            period
+            period,
+            chartTypes,
+            urlParams
         } = this.state;
-        this.getCurrentChartData();
-        switch(period){
-            case 'KLINE_UNKNOWN':this.setState({offsetTime:60000});break;
-            case 'KLINE_1MIN':this.setState({offsetTime:60000});break;
-            case 'KLINE_5MIN':this.setState({offsetTime:300000});break;
-            case 'KLINE_15MIN':this.setState({offsetTime:900000});break;
-            case 'KLINE_30MIN':this.setState({offsetTime:1800000});break;
-            case 'KLINE_1HR':this.setState({offsetTime:3600000});break;
-            case 'KLINE_2HR':this.setState({offsetTime:7200000});break;
-            case 'KLINE_4HR':this.setState({offsetTime:14400000});break;
-            case 'KLINE_12HR':this.setState({offsetTime:43200000});break;
-            case 'KLINE_1DAY':this.setState({offsetTime:96400000});break;
+        if(urlParams.chartType!=='LIGHT'){
+            this.getCurrentChartData();
+            switch(period){
+                case 'KLINE_UNKNOWN':this.setState({
+                    offsetTime:60000,
+                    currentChart:chartTypes[3],
+                    indicators:[
+                        { name: 'Volume', active: true, height: 1},
+                        { name: 'Trendline', active: true, height: 0 },
+                        { name: 'MACD', active: false, height: 1 },
+                        { name: 'RSI', active: false, height: 1 },
+                        { name: 'ATR', active: false, height: 1 },
+                        { name: 'ForceIndex', active: false, height: 1 },
+                    ]
+                });break;
+                case 'KLINE_1MIN':this.setState({offsetTime:60000});break;
+                case 'KLINE_5MIN':this.setState({offsetTime:300000});break;
+                case 'KLINE_15MIN':this.setState({offsetTime:900000});break;
+                case 'KLINE_30MIN':this.setState({offsetTime:1800000});break;
+                case 'KLINE_1HR':this.setState({offsetTime:3600000});break;
+                case 'KLINE_2HR':this.setState({offsetTime:7200000});break;
+                case 'KLINE_4HR':this.setState({offsetTime:14400000});break;
+                case 'KLINE_12HR':this.setState({offsetTime:43200000});break;
+                case 'KLINE_1DAY':this.setState({offsetTime:96400000});break;
+                default:break;
+            }
+        }else{
+            this.getCurrentChartData();
+            this.setState({
+                offsetTime:1000,
+                currentChart:chartTypes[2],
+                indicatorHeight:0,
+                indicators:[
+                    { name: 'Volume', active: false, height: 0 },
+                    { name: 'Trendline', active: true, height: 0 },
+                    { name: 'MACD', active: false, height: 1 },
+                    { name: 'RSI', active: false, height: 1 },
+                    { name: 'ATR', active: false, height: 1 },
+                    { name: 'ForceIndex', active: false, height: 1 },
+                ]
+            })
         }
     }
     render(){
@@ -229,21 +364,26 @@ class OHLCV extends React.PureComponent{
                 currentChart,
                 currentTimeSpan,
                 ohlcvData,
-                noOfCandles,
                 toolHight,
                 WSUrl,
                 wsObj,
                 isConnectWS,
-                contractNo
+                contractNo,
+                start,
+                end,
+                urlParams,
+                dotSize,
+                period
             },
             changeTimeSpan,
             changeChartType,
             changeIndicator,
+            swicthIndicator,
             handleWSData
         } = this;
         return (
             <Hideable>
-                <AutoSizer style={{width:'100%',height:toolHight,display:'flex'}}>
+                {/* <AutoSizer style={{width:'100%',height:toolHight,display:'flex'}}>
                     {({width})=>(
                         <Toolbar
                             state={this.state}
@@ -255,7 +395,7 @@ class OHLCV extends React.PureComponent{
                         >
                         </Toolbar>
                     )}
-                </AutoSizer>
+                </AutoSizer> */}
                 <Socket
                     url={WSUrl}
                     wsObj={wsObj}
@@ -268,16 +408,22 @@ class OHLCV extends React.PureComponent{
                         indicatorHeight={indicatorHeight}
                         currentChart={currentChart}
                         data={ohlcvData}
-                        noOfCandles={noOfCandles}
-                        width="100%"
+                        indicatorLength={indicators.length}
                         volume={indicators[0]}
                         line={indicators[1]}
                         macd={indicators[2]}
                         rsi={indicators[3]}
                         atr={indicators[4]}
                         forceIndex={indicators[5]}
+                        start={start}
+                        end={end}
+                        chartType={urlParams.chartType}
+                        dotSize={dotSize}
+                        swicthIndicator={swicthIndicator}
+                        period={period}
                     />
                 </Socket>
+                
             </Hideable>
         )
     }
@@ -329,11 +475,6 @@ const Toolbar = (props)=>{
 const ToolbarWrapper = styled.div`
 display: flex;
 justify-content: start;
-
-@media only screen and (max-width: 1200px) {
-  display: none;
-}
-
 `;
 const ChartTypeMenu = styled.div`
   position: relative;
